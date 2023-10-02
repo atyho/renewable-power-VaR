@@ -1,0 +1,8 @@
+// For format details, see Development Containers Community at https://github.com/devcontainers
+{
+	"name": "Codespaces",
+	"build": {
+		"dockerfile": "Dockerfile",
+		"context": ".."
+	}
+}
