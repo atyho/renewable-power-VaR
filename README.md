@@ -4,11 +4,11 @@ This repository contains the data files and the analytical programs used for the
 
 ## Content
 
-This repository is structured in the following way: first execute data cleaning programs specified in the 4 data folders ([NE](#NE), NY, ON, QC) to process the source data. Also execute the data processing program in GHCND folder to identify extreme weather dates. Data folders are independent and they do not have to be executed in any specific order.
+This repository is structured in the following way: first execute data cleaning programs specified in the 4 [data folders](#Data-folders) (NE, NY, ON, QC) to process the source data. Also execute the data processing program in GHCND folder to identify extreme weather dates. Data folders are independent and they do not have to be executed in any specific order.
 
 For the analytical programs, first execute the programs in the 
 
-### Data folders:
+### Data folders
 
 #### Folder: [NE](/NE)
 Description: Program for cleaning source data from ISO-NE. \
