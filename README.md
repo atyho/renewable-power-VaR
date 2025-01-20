@@ -31,22 +31,12 @@ Execution: run *ghcnd_processing.R*
 ### Analytical Programs
 
 Folder: VaR_estimation  
-Description:
+Description: Analytical program for computing the renewable energy surplus, estimating region-specific ARIMA processes, vine copula estimate, and simulate the value-at-risk (VaR) levels in Section 3.
 
 Folder: VaR_conditional  
 Description:
 
-Folder:
-Description:
 
-Folder:
-Description:
-
-Folder:
-Description:
-
-Folder:
-Description:
 
 
 # Data sources
