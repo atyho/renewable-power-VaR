@@ -14,19 +14,19 @@ For the [analytical programs](#Analytical-Programs), first execute the programs 
 Description: Program for cleaning source data from ISO-NE. \
 Execution: run *NE_data_process.R*
 
-#### Folder: NY  
+#### Folder: [NY](/NY)  
 Description: Program for cleaning source data from NYISO. \
 Execution: run *NY_data_process.R*  
 
-#### Folder: ON  
+#### Folder: [ON](/ON)  
 Description: Program for cleaning source data from IESO. \
 Execution: run *fuel_mix_xml_read.R* to read data in xml format and then run *ON_data_process.R* for data cleaning.
 
-#### Folder: QC  
+#### Folder: [QC](/QC)  
 Description: Program for cleaning source data from Hydro Quebec. \
 Execution: run *QC_data_process.R*
 
-#### Folder: GHCND
+#### Folder: [GHCND](/GHCND)
 Description: Program for cleaning source data from GHCNd, as well as identifying heat and cold waves. \
 Execution: run *ghcnd_processing.R*
 
