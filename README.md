@@ -4,7 +4,9 @@ This repository contains the data files and the analytical programs used for the
 
 ## Content
 
-This repository is structured in the following way:
+This repository is structured in the following way: first execute data cleaning programs specified in the 4 data folders ([NE](/NE), NY, ON, QC) to process the source data. Also execute the data processing program in GHCND folder to identify extreme weather dates. Data folders are independent and they do not have to be executed in any specific order.
+
+For the analytical programs, first execute the programs in the 
 
 ### Data folders:
 
@@ -31,12 +33,21 @@ Execution: run *ghcnd_processing.R*
 ### Analytical Programs
 
 #### Folder: VaR_estimation  
+
 ##### Description: 
 Analytical program for computing the renewable energy surplus, estimating region-specific ARIMA processes, vine copula estimate, and simulate the value-at-risk (VaR) levels in Section 3.
+
+##### Execution:
+stylized_facts.R
+VaR.R
+VaR_ES_plot.R
 
 #### Folder: VaR_conditional  
 ##### Description:
 Conduct the value-at-risk simulation (in Section 5) for dates categorized as with extreme weather in specific regions.
+
+VaR.R
+VaR_ES_plot.R
 
 # Data sources
 - [Independent Electricity System Operator (IESO)](https://www.ieso.ca/)
