@@ -36,9 +36,7 @@ Analytical program for computing the renewable energy surplus, estimating region
 
 #### Folder: VaR_conditional  
 ##### Description:
-
-
-
+Conduct the value-at-risk simulation (in Section 5) for dates categorized as with extreme weather in specific regions.
 
 # Data sources
 - [Independent Electricity System Operator (IESO)](https://www.ieso.ca/)
