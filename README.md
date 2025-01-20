@@ -1,6 +1,6 @@
 ## Introduction
 
-This repository contains the data files and the analytical programs used for the paper title "Walk Down to Electric Avenue: Risk Management of Interdependence of Renewable Energy in the North American Market."
+This repository contains the data files and the analytical programs used for the paper titled "**Walk Down to Electric Avenue: Risk Management of Interdependence of Renewable Energy in the North American Market**."
 
 ## Content
 
@@ -32,24 +32,23 @@ Execution: run *ghcnd_processing.R*
 
 ### Analytical Programs
 
-#### Folder: VaR_estimation  
+#### Folder: [VaR_estimation](/VaR_estimation)  
 
-##### Description: 
+##### Description
 Analytical program for computing the renewable energy surplus, estimating region-specific ARIMA processes, vine copula estimate, and simulate the value-at-risk (VaR) levels in Section 3.
 
-##### Execution:
-stylized_facts.R
-VaR.R
-VaR_ES_plot.R
+##### Execution
+Run *stylized_facts.R* to obtain stylized facts. Then, run *VaR.R* to obtain the empirical estimates on the ARIMA process, vine copula structure, and VaR simulation results. Optional: run *VaR_ES_plot.R* to visualize the distribution of daily VaR levels and the expected shortfall.
 
-#### Folder: VaR_conditional  
-##### Description:
+#### Folder: [VaR_conditional](/VaR_conditional)  
+
+##### Description
 Conduct the value-at-risk simulation (in Section 5) for dates categorized as with extreme weather in specific regions.
 
-VaR.R
-VaR_ES_plot.R
+##### Execution
+Run *VaR.R* to obtain the VaR simulation results for extreme weather dates. This foilder depends on the baseline estimates for the ARIMA process and the vine copula structure. Optional: run *VaR_ES_plot.R* to visualize the distribution of daily VaR levels and the expected shortfall.
 
-# Data sources
+## Data sources
 - [Independent Electricity System Operator (IESO)](https://www.ieso.ca/)
 - [Hydro Quebec](https://www.hydroquebec.com/documents-data/open-data/electricity-generation-quebec/)
 - [New York Independent System Operator (NYISO)](https://www.nyiso.com/)
