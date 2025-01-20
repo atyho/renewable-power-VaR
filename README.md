@@ -1,8 +1,46 @@
 # Introduction
 
-This repository contains the data files and the analytical programs used for the paper title "Walk Down to Electric Avenue: Risk Management of Interdependence of Renewable Energy in the North American Market"
+This repository contains the data files and the analytical programs used for the paper title "Walk Down to Electric Avenue: Risk Management of Interdependence of Renewable Energy in the North American Market."
 
 # Folder content
+
+This repository is structured in the following way:
+
+Data files:
+
+Folder: NE  
+Description:
+Execution file:
+
+Folder: NY
+Description:
+
+Folder: ON
+Description:
+
+Folder: QC
+Description:
+
+
+
+Folder:
+Description:
+
+Folder:
+Description:
+
+Folder:
+Description:
+
+Folder:
+Description:
+
+Folder:
+Description:
+
+Folder:
+Description:
+
 
 # Data sources
 - [Independent Electricity System Operator (IESO)](https://www.ieso.ca/)
