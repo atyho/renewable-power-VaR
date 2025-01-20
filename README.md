@@ -10,30 +10,30 @@ This repository is structured in the following way:
 
 Folder: NE  
 Description: Program for cleaning source data from ISO-NE.  
-Execution file: *NE_data_process.R*
+Execution: run *NE_data_process.R*
 
 Folder: NY  
 Description: Program for cleaning source data from NYISO.  
-Execution file: *NY_data_process.R*  
+Execution: run *NY_data_process.R*  
 
 Folder: ON  
 Description: Program for cleaning source data from IESO.  
-Execution file: use *fuel_mix_xml_read.R* to read data in xml format and then run *ON_data_process.R* for data cleaning.
+Execution: run *fuel_mix_xml_read.R* to read data in xml format and then run *ON_data_process.R* for data cleaning.
 
 Folder: QC  
 Description: Program for cleaning source data from Hydro Quebec.  
-Execution file: *QC_data_process.R*
+Execution: run *QC_data_process.R*
 
 Folder: GHCND
 Description: Program for cleaning source data from GHCNd, as well as identifying heat and cold waves.
-Execution file: *ghcnd_processing.R*
+Execution: run *ghcnd_processing.R*
 
 ### Analytical Programs
 
-Folder:
+Folder: VaR_estimation  
 Description:
 
-Folder:
+Folder: VaR_conditional  
 Description:
 
 Folder:
