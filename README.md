@@ -30,6 +30,8 @@ Execution: run *QC_data_process.R*
 Description: Program for cleaning source data from GHCNd, as well as identifying heat and cold waves. \
 Execution: run *ghcnd_processing.R*
 
+**NEW:** Data are also collected and made available by Statistics Canada at [High-Frequency Electricity Data: Visualization Tool (Beta)](https://energy-information.canada.ca/en/resources/high-frequency-electricity-data)
+
 ### Analytical Programs
 
 #### Folder: [VaR_estimation](/VaR_estimation)  
