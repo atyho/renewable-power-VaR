@@ -38,9 +38,9 @@ ISONE_states <- c("ME", "VT", "NH", "MA", "RI", "CT") # New England states for I
 # Combine all filtered stations into one data frame
 ghcn_station <- bind_rows(
   ghcn_station_all %>% filter(State %in% IESO_states) %>% mutate(Region = "IESO"),
-  ghcn_station_all %>% filter(State %in% HYDROQC_states) %>% mutate(Region = "Hydro Quebec"),
+  ghcn_station_all %>% filter(State %in% HYDROQC_states) %>% mutate(Region = "HydroQC"),
   ghcn_station_all %>% filter(State %in% NYISO_states) %>% mutate(Region = "NYISO"),
-  ghcn_station_all %>% filter(State %in% ISONE_states) %>% mutate(Region = "ISO-NE"))
+  ghcn_station_all %>% filter(State %in% ISONE_states) %>% mutate(Region = "ISONE"))
 
 # Find duplicated coordinates
 repeated_coords <- ghcn_station %>%
@@ -279,7 +279,7 @@ station_cold <- station_extreme(TMIN_data, "TMIN", 0.05, direction = "below") %>
 # Identify regional heat wave days (>=1 station under a heat wave)
 regional_heat <- regional_extreme(station_heat)
 
-# Identify regional heat wave days (>=1 station under a heat wave)
+# Identify regional cold spell days (>=1 station under a cold spell)
 regional_cold <- regional_extreme(station_cold)
 
 save(regional_heat, file = "regional_heat.RData")
@@ -287,15 +287,14 @@ save(regional_cold, file = "regional_cold.RData")
 
 #### Save the workspace ####
 save.image(file = "GHCND_workspace.RData")
+
 #### Correlation of heat wave dates between stations within the same region ####
 
 station_heat_cor <- station_heat %>%
-  filter(extreme_event == 1) %>%
   select(Date, ID, Region, extreme_event) %>%
   group_by(Region) %>%
   do({
-    cor_matrix <- pivot_wider(., names_from = ID, values_from = extreme_event,
-                              values_fill = list(extreme_event = 0)) %>%
+    cor_matrix <- pivot_wider(., names_from = ID, values_from = extreme_event) %>%
       arrange(Region, Date) %>% select(-Date, -Region) %>%
       cor(., use = "pairwise.complete.obs")
     
@@ -316,12 +315,10 @@ print(station_heat_cor)
 #### Correlation of cold spell dates between stations within the same region ####
 
 station_cold_cor <- station_cold %>%
-  filter(extreme_event == 1) %>%
   select(Date, ID, Region, extreme_event) %>%
   group_by(Region) %>%
   do({
-    cor_matrix <- pivot_wider(., names_from = ID, values_from = extreme_event,
-                              values_fill = list(extreme_event = 0)) %>%
+    cor_matrix <- pivot_wider(., names_from = ID, values_from = extreme_event) %>%
       arrange(Region, Date) %>% select(-Date, -Region) %>%
       cor(., use = "pairwise.complete.obs")
     
@@ -342,30 +339,31 @@ print(station_cold_cor)
 #### Correlation of heat wave dates between regions ####
 
 region_heat_cor <- regional_heat %>%
-  filter(regional_extreme == 1) %>%
-  pivot_wider(names_from = Region, values_from = regional_extreme, 
-              values_fill = list(regional_extreme = 0)) %>%
+  pivot_wider(names_from = Region, values_from = regional_extreme) %>%
   arrange(Date) %>% select(-Date) %>%
   cor(., use = "pairwise.complete.obs")
+
+region_order <- c("IESO", "HydroQC", "NYISO", "ISONE")
+region_heat_cor <- region_heat_cor[region_order, region_order]
 
 # View the correlation matrix
 cat("Correlation of heat wave dates between regions")
 print(region_heat_cor)
-write.csv(region_heat_cor, file = "region_heat_cor_inter.csv", row.names = FALSE)
+write.csv(region_heat_cor, file = "region_heat_cor_inter.csv", row.names = TRUE)
 
 #### Correlation of cold spell dates between regions ####
 
 region_cold_cor <- regional_cold %>%
-  filter(regional_extreme == 1) %>%
-  pivot_wider(names_from = Region, values_from = regional_extreme, 
-              values_fill = list(regional_extreme = 0)) %>%
+  pivot_wider(names_from = Region, values_from = regional_extreme) %>%
   arrange(Date) %>% select(-Date) %>%
   cor(., use = "pairwise.complete.obs")
+
+region_cold_cor <- region_cold_cor[region_order, region_order]
 
 # View the correlation matrix
 cat("Correlation of cold spell dates between regions")
 print(region_cold_cor)
-write.csv(region_cold_cor, file = "region_cold_cor_inter.csv", row.names = FALSE)
+write.csv(region_cold_cor, file = "region_cold_cor_inter.csv", row.names = TRUE)
 
 #### Create average heat wave day counts within a month for each region ####
 regional_heat_freq <- regional_heat %>%
@@ -381,14 +379,28 @@ non_zero_months <- regional_heat_freq %>% group_by(month) %>%
 
 regional_heat_freq <- regional_heat_freq %>% filter(month %in% non_zero_months)
 
+#### Create average cold spell day counts within a month for each region ####
+regional_cold_freq <- regional_cold %>%
+  mutate(month = month(Date), year = year(Date)) %>%
+  group_by(Region, month, year) %>%
+  summarize(days = sum(regional_extreme, na.rm = TRUE), .groups = "drop") %>%
+  group_by(Region, month) %>%
+  summarize(days_per_year = mean(days), .groups = "drop")
+
+# Keep months with non-zero cold spell days
+non_zero_months <- regional_cold_freq %>% group_by(month) %>%
+  filter(days_per_year > 0) %>% pull(month)
+
+regional_cold_freq <- regional_cold_freq %>% filter(month %in% non_zero_months)
+
 #### Function to create extreme weather frequency plot ####
 
 plot_extreme_freq <- function(data) {
   
   # Rename the Region levels to desired abbreviations
   data$Region <- recode(data$Region,
-                        "IESO" = "ON", "Hydro Quebec" = "QC",
-                        "NYISO" = "NY", "ISO-NE" = "NE")
+                        "IESO" = "ON", "HydroQC" = "QC",
+                        "NYISO" = "NY", "ISONE" = "NE")
   
   # Ensure correct factor levels and ordering
   data$Region <- factor(data$Region, levels = c("ON", "QC", "NY", "NE"))
@@ -398,13 +410,13 @@ plot_extreme_freq <- function(data) {
     ggplot(data, 
            aes(x = factor(month, levels = 1:12, labels = month.abb),
                y = days_per_year, fill = Region)) +
-    geom_bar(stat = "identity", position = "dodge", color = "black", size = 0.25) +  # Bar graph with reduced line width
-    labs(title = "", x = "", y = "", fill = "") +                     # Label for y-axis
+    geom_bar(stat = "identity", position = "dodge", color = "black") +             # Bar graph with reduced line width
+    labs(title = "", x = "", y = "", fill = "") +                                  # Label for y-axis
     theme_minimal() +                                                              # Minimal theme
     theme(axis.line = element_blank(),                # Black axis lines
           panel.grid.major.y = element_line(color = "gray90", linewidth = 0.25),   # Show y-axis major grid lines
           panel.grid.minor = element_blank(),                                      # No minor grid lines
-          panel.border = element_rect(color = "black", fill = NA, linewidth = 0.5),# Reduced border line width
+          panel.border = element_rect(color = "black", fill=NA, linewidth = 0.5),  # Reduced border line width
           legend.position = "bottom",                                              # Legend at the bottom
           legend.direction = "horizontal",                                         # Horizontal legend
           legend.margin = margin(t = -20),                                         # Reduce space between the graph and the legend
@@ -427,20 +439,6 @@ cairo_ps(filename = "heat_waves.eps",
 print(plot_heat_wave_freq)
 dev.off()
 
-#### Create average cold spell day counts within a month for each region ####
-regional_cold_freq <- regional_cold %>%
-  mutate(month = month(Date), year = year(Date)) %>%
-  group_by(Region, month, year) %>%
-  summarize(days = sum(regional_extreme, na.rm = TRUE), .groups = "drop") %>%
-  group_by(Region, month) %>%
-  summarize(days_per_year = mean(days), .groups = "drop")
-
-# Keep months with non-zero cold spell days
-non_zero_months <- regional_cold_freq %>% group_by(month) %>%
-  filter(days_per_year > 0) %>% pull(month)
-
-regional_cold_freq <- regional_cold_freq %>% filter(month %in% non_zero_months)
-
 #### Create cold spell frequency plot ####
 
 plot_cold_wave_freq <- plot_extreme_freq(regional_cold_freq)
@@ -451,11 +449,10 @@ print(plot_cold_wave_freq)
 dev.off()
 
 #### Check if there are times with all regions having heat waves ####
+
 dates_all_regions_heat <- regional_heat %>%
   group_by(Date) %>%
   summarize(all_regions_heat = all(regional_heat == 1)) %>%  # Check if all regions have regional_heat == 1 for the date
   filter(all_regions_heat == TRUE)  # Keep only the dates where all regions have heat
 
 print(dates_all_regions_heat)
-
-

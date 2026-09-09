@@ -134,20 +134,45 @@ renewable_surplus <- left_join(renewable_surplus, mean_wdayhr, by = c("wday","ho
 #### ARMA-GARCH ####
 
 # Automatically find the best ARMA process for the mean equation
-auto_arma_fit <- auto.arima(renewable_surplus$surplus_mw.IESO -
-                              renewable_surplus$mean_yr.IESO -
-                              renewable_surplus$mean_mn.IESO -
-                              renewable_surplus$mean_wdayhr.IESO, 
-                            seasonal = TRUE)
+auto_arma_fit_IESO <- auto.arima(renewable_surplus$surplus_mw.IESO -
+                                   renewable_surplus$mean_yr.IESO -
+                                   renewable_surplus$mean_mn.IESO -
+                                   renewable_surplus$mean_wdayhr.IESO,
+                                 max.p = 24, max.q = 24, max.d = 0,
+                                 seasonal = TRUE)
+
+auto_arma_fit_HydroQC <- auto.arima(renewable_surplus$surplus_mw.HydroQC -
+                                      renewable_surplus$mean_yr.HydroQC -
+                                      renewable_surplus$mean_mn.HydroQC -
+                                      renewable_surplus$mean_wdayhr.HydroQC,
+                                    max.p = 24, max.q = 24, max.d = 0,
+                                    seasonal = TRUE)
+
+auto_arma_fit_NYISO <- auto.arima(renewable_surplus$surplus_mw.NYISO -
+                                    renewable_surplus$mean_yr.NYISO -
+                                    renewable_surplus$mean_mn.NYISO -
+                                    renewable_surplus$mean_wdayhr.NYISO,
+                                  max.p = 24, max.q = 24, max.d = 0,
+                                  seasonal = TRUE)
+
+auto_arma_fit_ISONE <- auto.arima(renewable_surplus$surplus_mw.ISONE -
+                                    renewable_surplus$mean_yr.ISONE -
+                                    renewable_surplus$mean_mn.ISONE -
+                                    renewable_surplus$mean_wdayhr.ISONE,
+                                  max.p = 24, max.q = 24, max.d = 0,
+                                  seasonal = TRUE)
 
 # Extract the AR and MA orders
-arma_order <- arimaorder(auto_arma_fit)
-p <- arma_order[1]  # AR order
-q <- arma_order[3]  # MA order
+arma_order <- pmax(
+  arimaorder(auto_arma_fit_IESO),
+  arimaorder(auto_arma_fit_HydroQC),
+  arimaorder(auto_arma_fit_NYISO),
+  arimaorder(auto_arma_fit_ISONE)
+  )
 
 # Model specification
 margin.spec <- ugarchspec(variance.model = list(model = "sGARCH", garchOrder = c(1,1)),
-                          mean.model = list(armaOrder = c(2,5)),
+                          mean.model = list( armaOrder = c(arma_order[1],arma_order[3]) ),
                           distribution.model = "sstd")
 
 # Estimate the model with de-meaned data
@@ -175,17 +200,13 @@ ar.garch.ISONE <- ugarchfit(spec = margin.spec, solver = "hybrid",
                              renewable_surplus$mean_mn.ISONE - 
                              renewable_surplus$mean_wdayhr.ISONE)
 
-# Standardize the residuals
-res.IESO <- residuals(ar.garch.IESO)/sigma(ar.garch.IESO)
-res.HydroQC <- residuals(ar.garch.HydroQC)/sigma(ar.garch.HydroQC)
-res.NYISO <- residuals(ar.garch.NYISO)/sigma(ar.garch.NYISO)
-res.ISONE <- residuals(ar.garch.ISONE)/sigma(ar.garch.ISONE)
-
-# Combine residuals into a dataframe
-data.res <- data.frame(res.IESO = res.IESO,
-                       res.HydroQC = res.HydroQC,
-                       res.NYISO = res.NYISO,
-                       res.ISONE = res.ISONE)
+# Combine standardized residuals into a dataframe
+data.res <- data.frame(
+  res.IESO = residuals(ar.garch.IESO)/sigma(ar.garch.IESO),
+  res.HydroQC = residuals(ar.garch.HydroQC)/sigma(ar.garch.HydroQC),
+  res.NYISO = residuals(ar.garch.NYISO)/sigma(ar.garch.NYISO),
+  res.ISONE = residuals(ar.garch.ISONE)/sigma(ar.garch.ISONE)
+  )
 
 #### Estimate copula model for the residuals ####
 
@@ -197,20 +218,20 @@ data.res.pobs <- pobs(data.res)
 RVM <- RVineStructureSelect(data.res.pobs, familyset = c(1:6), progress = TRUE)
 
 # Show estimates of the selected R-vine structure
-summary(RVM)
 writeLines(capture.output(summary(RVM)), "RVM_summary.txt")
 write.csv(summary(RVM), file = "RVM_summary.csv", row.names = FALSE)
 
 # contour plots of all pair-copulas
 contour(RVM,
-        col = "black",  # Set the contour lines to black
+        col = "black",      # Set the contour lines to black
         drawlabels = TRUE)  # Add labels to the contour lines
 
-#### Value at Risk Simulation ####
+#### Simulation shocks for VaR and ES ####
 
 # Define the number of periods and repetitions
-n_period <- nrow(renewable_surplus)
-n_rep <- 1
+n_period <- nrow(renewable_surplus) # number of sample periods
+n_rep     <- 1  # number of simulations
+n_sim_obs <- 500  # number of obs simulated from the vine copula
 
 # Loop through each period of time
 # foreach ensures the results are reassembled in the correct order 
@@ -236,37 +257,42 @@ sim_risk <- foreach (period_i = 1:n_period, .packages = par_packages) %dopar% {
   for (rep in 1:n_rep) {
     
     # Simulate from the fitted vine copula
-    simdata <- RVineSim(200, RVM)
+    simdata <- RVineSim(n_sim_obs, RVM)
     
     # Apply quantile function to retrieve shock values 
-    sim.res.IESO <- sapply(simdata[,"res.IESO"], FUN = qst, 
-                           df = ar.garch.IESO[shape], mean = 0, sd = 1, 
-                           skew = ar.garch.IESO[skew])
+    sim.res.IESO <- sapply(
+      simdata[,"res.IESO"], FUN = qst, 
+      df = ar.garch.IESO[shape], mean = 0, sd = 1, 
+      skew = ar.garch.IESO[skew]
+      )
     
     sim.res.IESO <- sim.res.IESO*as.numeric(sigma(ar.garch.IESO)[period_i])
     
-    sim.res.HydroQC <- sapply(simdata[,"res.HydroQC"], FUN = qst, 
-                              df = ar.garch.HydroQC[shape], mean = 0, sd = 1, 
-                              skew = ar.garch.HydroQC[skew])
+    sim.res.HydroQC <- sapply(
+      simdata[,"res.HydroQC"], FUN = qst, 
+      df = ar.garch.HydroQC[shape], mean = 0, sd = 1, 
+      skew = ar.garch.HydroQC[skew]
+      )
     
     sim.res.HydroQC <- sim.res.HydroQC*as.numeric(sigma(ar.garch.HydroQC)[period_i])
     
-    sim.res.NYISO <- sapply(simdata[,"res.NYISO"], FUN = qst, 
-                            df = ar.garch.NYISO[shape], mean = 0, sd = 1, 
-                            skew = ar.garch.NYISO[skew])
+    sim.res.NYISO <- sapply(
+      simdata[,"res.NYISO"], FUN = qst, 
+      df = ar.garch.NYISO[shape], mean = 0, sd = 1, 
+      skew = ar.garch.NYISO[skew]
+      )
     
     sim.res.NYISO <- sim.res.NYISO*as.numeric(sigma(ar.garch.NYISO)[period_i])
     
-    sim.res.ISONE <- sapply(simdata[,"res.ISONE"], FUN = qst, 
-                           df = ar.garch.ISONE[shape], mean = 0, sd = 1, 
-                           skew = ar.garch.ISONE[skew])
+    sim.res.ISONE <- sapply(
+      simdata[,"res.ISONE"], FUN = qst, 
+      df = ar.garch.ISONE[shape], mean = 0, sd = 1, 
+      skew = ar.garch.ISONE[skew]
+      )
     
     sim.res.ISONE <- sim.res.ISONE*as.numeric(sigma(ar.garch.ISONE)[period_i])
     
-    sim.res <- data.frame(sim.res.IESO, 
-                          sim.res.HydroQC, 
-                          sim.res.NYISO, 
-                          sim.res.ISONE) %>%
+    sim.res <- data.frame(sim.res.IESO, sim.res.HydroQC, sim.res.NYISO, sim.res.ISONE) %>%
       mutate(sim.res.total = sim.res.IESO + sim.res.HydroQC + sim.res.NYISO + sim.res.ISONE)
     
     # Simulated value-at-risk value
@@ -298,64 +324,73 @@ sim_risk <- foreach (period_i = 1:n_period, .packages = par_packages) %dopar% {
   }
   
   # Store the results for this period in the list
-  sim_risk <- list(time_utc = renewable_surplus$time_utc[period_i],
-                   VaR_p5_IESO = mean(VaR_sim$IESO[,1]),
-                   VaR_p5_HydroQC = mean(VaR_sim$HydroQC[,1]),
-                   VaR_p5_NYISO = mean(VaR_sim$NYISO[,1]),
-                   VaR_p5_ISONE = mean(VaR_sim$ISONE[,1]),
-                   VaR_p5_total = mean(VaR_sim$total[,1]),
-                   
-                   VaR_p10_IESO = mean(VaR_sim$IESO[,2]),
-                   VaR_p10_HydroQC = mean(VaR_sim$HydroQC[,2]),
-                   VaR_p10_NYISO = mean(VaR_sim$NYISO[,2]),
-                   VaR_p10_ISONE = mean(VaR_sim$ISONE[,2]),
-                   VaR_p10_total = mean(VaR_sim$total[,2]),
-                   
-                   ES_p5_IESO = mean(ES_sim$IESO[,1]),
-                   ES_p5_HydroQC = mean(ES_sim$HydroQC[,1]),
-                   ES_p5_NYISO = mean(ES_sim$NYISO[,1]),
-                   ES_p5_ISONE = mean(ES_sim$ISONE[,1]),
-                   ES_p5_total = mean(ES_sim$total[,1]),
-                   
-                   ES_p10_IESO = mean(ES_sim$IESO[,2]),
-                   ES_p10_HydroQC = mean(ES_sim$HydroQC[,2]),
-                   ES_p10_NYISO = mean(ES_sim$NYISO[,2]),
-                   ES_p10_ISONE = mean(ES_sim$ISONE[,2]),
-                   ES_p10_total = mean(ES_sim$total[,2])
-                   )
+  sim_risk <- list(
+    time_utc = renewable_surplus$time_utc[period_i],
+    
+    VaR_p5_IESO = mean(VaR_sim$IESO[,1]),
+    VaR_p5_HydroQC = mean(VaR_sim$HydroQC[,1]),
+    VaR_p5_NYISO = mean(VaR_sim$NYISO[,1]),
+    VaR_p5_ISONE = mean(VaR_sim$ISONE[,1]),
+    VaR_p5_total = mean(VaR_sim$total[,1]),
+    
+    VaR_p10_IESO = mean(VaR_sim$IESO[,2]),
+    VaR_p10_HydroQC = mean(VaR_sim$HydroQC[,2]),
+    VaR_p10_NYISO = mean(VaR_sim$NYISO[,2]),
+    VaR_p10_ISONE = mean(VaR_sim$ISONE[,2]),
+    VaR_p10_total = mean(VaR_sim$total[,2]),
+    
+    ES_p5_IESO = mean(ES_sim$IESO[,1]),
+    ES_p5_HydroQC = mean(ES_sim$HydroQC[,1]),
+    ES_p5_NYISO = mean(ES_sim$NYISO[,1]),
+    ES_p5_ISONE = mean(ES_sim$ISONE[,1]),
+    ES_p5_total = mean(ES_sim$total[,1]),
+    
+    ES_p10_IESO = mean(ES_sim$IESO[,2]),
+    ES_p10_HydroQC = mean(ES_sim$HydroQC[,2]),
+    ES_p10_NYISO = mean(ES_sim$NYISO[,2]),
+    ES_p10_ISONE = mean(ES_sim$ISONE[,2]),
+    ES_p10_total = mean(ES_sim$total[,2])
+    )
   
 }
 
 # Convert simulation results into a dataframe
-sim_risk_df <- do.call(rbind, lapply(sim_risk, as.data.frame))
+sim_risk_df <- do.call(
+  rbind, lapply(sim_risk, as.data.frame)
+  )
 
 #### Distribution of renewable surplus ####
 
 # Compute fitted values from ARMA-GARCH
-fitted.IESO <- fitted(ar.garch.IESO) + 
+fitted.IESO <- 
+  fitted(ar.garch.IESO) + 
   renewable_surplus$mean_yr.IESO + 
   renewable_surplus$mean_mn.IESO + 
   renewable_surplus$mean_wdayhr.IESO
 
-fitted.HydroQC <- fitted(ar.garch.HydroQC) + 
+fitted.HydroQC <- 
+  fitted(ar.garch.HydroQC) + 
   renewable_surplus$mean_yr.HydroQC + 
   renewable_surplus$mean_mn.HydroQC + 
   renewable_surplus$mean_wdayhr.HydroQC
 
-fitted.NYISO <- fitted(ar.garch.NYISO) +
+fitted.NYISO <- 
+  fitted(ar.garch.NYISO) +
   renewable_surplus$mean_yr.NYISO + 
   renewable_surplus$mean_mn.NYISO + 
   renewable_surplus$mean_wdayhr.NYISO
 
-fitted.ISONE <- fitted(ar.garch.ISONE) + 
+fitted.ISONE <- 
+  fitted(ar.garch.ISONE) + 
   renewable_surplus$mean_yr.ISONE + 
   renewable_surplus$mean_mn.ISONE + 
   renewable_surplus$mean_wdayhr.ISONE
 
 # Combine with the shocks
-data.estimate <- data.frame(fitted.IESO, fitted.HydroQC, 
-                            fitted.NYISO, fitted.ISONE,
-                            sim_risk_df)
+data.estimate <- data.frame(
+  fitted.IESO, fitted.HydroQC, fitted.NYISO, fitted.ISONE,
+  sim_risk_df
+  )
 
 save.image(file="VaR.RData")
 

@@ -1,3 +1,5 @@
+setwd("VaR_estimation")
+
 rm(list = ls())
 
 library(dplyr)
@@ -149,7 +151,7 @@ q <- arma_order[3]  # MA order
 
 # Model specification
 margin.spec <- ugarchspec(variance.model = list(model = "sGARCH", garchOrder = c(1,1)),
-                          mean.model = list(armaOrder = c(2,5)),
+                          mean.model = list(armaOrder = c(p,q)),
                           distribution.model = "sstd")
 
 # Estimate the model with de-meaned data
@@ -359,7 +361,7 @@ data.estimate <- data.frame(fitted.IESO, fitted.HydroQC,
                             fitted.NYISO, fitted.ISONE,
                             sim_risk_df)
 
-save.image(file="VaR.RData")
+#save.image(file="VaR.RData")
 
 #### Record the end time ####
 end_time <- Sys.time()

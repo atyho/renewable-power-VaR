@@ -13,7 +13,7 @@ load(file="../VaR_estimation/VaR.RData")
 load(file="../GHCND/regional_heat.RData")
 load(file="../GHCND/regional_cold.RData")
 
-#### Prepare the data set for analysis ####
+#### Prepare the extreme weather data set for analysis ####
 
 # Replace Region labels
 regional_heat <- regional_heat %>% 
@@ -54,7 +54,7 @@ data.estimate <- data.estimate %>%
   left_join(regional_extreme, by = "Date")
 
 
-#### Summarize extreme renewable surplus (deficit) as percentage of renewable generation ####
+#### Summarize non-emissive surplus (deficit) risk as percentage of actual non-emissive energy generation ####
 
 # Join estimated renewable surplus and risk with actual renewable generation for each ISO
 data.estimate <- data.estimate %>%
@@ -142,7 +142,10 @@ find_risk_prct <- function(data.estimate) {
          )
 }
 
-#### Summarize extreme renewable surplus (VaR and ES) in levels (MW) of renewable generation ####
+# Save the results to a CSV file
+#write.csv(risk_prct_summary, file = "risk_prct_summary.csv", row.names = TRUE)
+
+#### Summarize non-emissive surplus (deficit) risk as level (MW) of electricity generation ####
 
 # Function to summarize risk in levels
 find_risk_lvl <- function(data.estimate) {
@@ -327,4 +330,3 @@ print(ES_dist)
 cairo_ps(filename = "ES_dist_plot.eps", width = 3, height = 3, pointsize = 12, fallback_resolution = 300)
 print(ES_dist)
 dev.off()
-

@@ -8,9 +8,9 @@ library(Cairo)
 
 load(file="VaR.RData")
 
-#### Summarize Risk in terms of shock values (MW) ####
+#### For simulated shocks: summarize risk in terms of levels (MW) ####
 
-# Capture summaries for VaR and ES in a list
+# Calculate summary statistics for VaR and ES of the shock distribution in a list
 shock_lvl_summary <- list(
   # VaR Summaries
   VaR_p10_IESO = summary(data.estimate$VaR_p10_IESO),
@@ -39,15 +39,61 @@ shock_lvl_summary <- list(
   ES_p5_total = summary(data.estimate$ES_p5_total)
 )
 
-# Convert to a data frame and save it to CSV
+# Convert to a data frame
 shock_lvl_summary <- do.call(rbind, shock_lvl_summary)
 
 # Save the results to a CSV file
 write.csv(shock_lvl_summary, file = "shock_lvl_summary.csv", row.names = TRUE)
 
-#### Summarize extreme renewable surplus (deficit) as percentage of renewable generation ####
+#### Summarize non-emissive surplus risk as level (MW) of electricity generation ####
 
-# Joint estimated renewable surplus and risk with actual renewable generation for each ISO
+risk_lvl_summary <- list(
+  # VaR Summaries for p10
+  VaR_p10_lvl_IESO = summary(data.estimate$VaR_p10_IESO + data.estimate$fitted.IESO),
+  VaR_p10_lvl_HydroQC = summary(data.estimate$VaR_p10_HydroQC + data.estimate$fitted.HydroQC),
+  VaR_p10_lvl_NYISO = summary(data.estimate$VaR_p10_NYISO + data.estimate$fitted.NYISO),
+  VaR_p10_lvl_ISONE = summary(data.estimate$VaR_p10_ISONE + data.estimate$fitted.ISONE),
+  VaR_p10_lvl_total = summary(data.estimate$VaR_p10_total +
+                                data.estimate$fitted.IESO + data.estimate$fitted.HydroQC + 
+                                data.estimate$fitted.NYISO + data.estimate$fitted.ISONE),
+  
+  # VaR Summaries for p5
+  VaR_p5_lvl_IESO = summary(data.estimate$VaR_p5_IESO + data.estimate$fitted.IESO),
+  VaR_p5_lvl_HydroQC = summary(data.estimate$VaR_p5_HydroQC + data.estimate$fitted.HydroQC),
+  VaR_p5_lvl_NYISO = summary(data.estimate$VaR_p5_NYISO + data.estimate$fitted.NYISO),
+  VaR_p5_lvl_ISONE = summary(data.estimate$VaR_p5_ISONE + data.estimate$fitted.ISONE),
+  VaR_p5_lvl_total = summary(data.estimate$VaR_p5_total +
+                               data.estimate$fitted.IESO + data.estimate$fitted.HydroQC +
+                               data.estimate$fitted.NYISO + data.estimate$fitted.ISONE),
+  
+  # ES Summaries for p10
+  ES_p10_lvl_IESO = summary(data.estimate$ES_p10_IESO + data.estimate$fitted.IESO),
+  ES_p10_lvl_HydroQC = summary(data.estimate$ES_p10_HydroQC + data.estimate$fitted.HydroQC),
+  ES_p10_lvl_NYISO = summary(data.estimate$ES_p10_NYISO + data.estimate$fitted.NYISO),
+  ES_p10_lvl_ISONE = summary(data.estimate$ES_p10_ISONE + data.estimate$fitted.ISONE),
+  ES_p10_lvl_total = summary(data.estimate$ES_p10_total +
+                               data.estimate$fitted.IESO + data.estimate$fitted.HydroQC + 
+                               data.estimate$fitted.NYISO + data.estimate$fitted.ISONE),
+  
+  # ES Summaries for p5
+  ES_p5_lvl_IESO = summary(data.estimate$ES_p5_IESO + data.estimate$fitted.IESO),
+  ES_p5_lvl_HydroQC = summary(data.estimate$ES_p5_HydroQC + data.estimate$fitted.HydroQC),
+  ES_p5_lvl_NYISO = summary(data.estimate$ES_p5_NYISO + data.estimate$fitted.NYISO),
+  ES_p5_lvl_ISONE = summary(data.estimate$ES_p5_ISONE + data.estimate$fitted.ISONE),
+  ES_p5_lvl_total = summary(data.estimate$ES_p5_total +
+                              data.estimate$fitted.IESO + data.estimate$fitted.HydroQC +
+                              data.estimate$fitted.NYISO + data.estimate$fitted.ISONE)
+)
+
+# Convert the summary list into a data frame
+risk_lvl_summary <- do.call(rbind, risk_lvl_summary)
+
+# Save the results to a CSV file
+write.csv(risk_lvl_summary, file = "risk_lvl_summary.csv", row.names = TRUE)
+
+#### Summarize non-emissive surplus risk as percentage of actual non-emissive energy generation ####
+
+# Join simulated data with actual non-emissive generation by each ISO
 data.estimate <- data.estimate %>%
   left_join(IESO %>% select(time_utc, renewable_mw), by = "time_utc") %>%
   rename(renewable_IESO = renewable_mw) %>%
@@ -59,7 +105,7 @@ data.estimate <- data.estimate %>%
   rename(renewable_ISONE = renewable_mw) %>%
   mutate(renewable_total = renewable_IESO + renewable_HydroQC + renewable_NYISO + renewable_ISONE)
 
-# Calculate renewable surplus (deficit) as a percentage of renewable generation
+# Calculate risk levels as a percentage of actual non-emissive energy generation
 data.estimate <- data.estimate %>%
   mutate(
     # VaR and ES percentages for IESO
@@ -128,47 +174,3 @@ risk_prct_summary <- do.call(rbind, risk_prct_summary)
 # Save the results to a CSV file
 write.csv(risk_prct_summary, file = "risk_prct_summary.csv", row.names = TRUE)
 
-#### Summarize extreme renewable surplus (VaR and ES) in levels (MW) of renewable generation ####
-risk_lvl_summary <- list(
-  # VaR Summaries for p10
-  VaR_p10_prct_IESO = summary(data.estimate$VaR_p10_IESO + data.estimate$fitted.IESO),
-  VaR_p10_prct_HydroQC = summary(data.estimate$VaR_p10_HydroQC + data.estimate$fitted.HydroQC),
-  VaR_p10_prct_NYISO = summary(data.estimate$VaR_p10_NYISO + data.estimate$fitted.NYISO),
-  VaR_p10_prct_ISONE = summary(data.estimate$VaR_p10_ISONE + data.estimate$fitted.ISONE),
-  VaR_p10_prct_total = summary(data.estimate$VaR_p10_total 
-                               + data.estimate$fitted.IESO + data.estimate$fitted.HydroQC
-                               + data.estimate$fitted.NYISO + data.estimate$fitted.ISONE),
-  
-  # VaR Summaries for p5
-  VaR_p5_prct_IESO = summary(data.estimate$VaR_p5_IESO + data.estimate$fitted.IESO),
-  VaR_p5_prct_HydroQC = summary(data.estimate$VaR_p5_HydroQC + data.estimate$fitted.HydroQC),
-  VaR_p5_prct_NYISO = summary(data.estimate$VaR_p5_NYISO + data.estimate$fitted.NYISO),
-  VaR_p5_prct_ISONE = summary(data.estimate$VaR_p5_ISONE + data.estimate$fitted.ISONE),
-  VaR_p5_prct_total = summary(data.estimate$VaR_p5_total 
-                              + data.estimate$fitted.IESO + data.estimate$fitted.HydroQC
-                              + data.estimate$fitted.NYISO + data.estimate$fitted.ISONE),
-  
-  # ES Summaries for p10
-  ES_p10_prct_IESO = summary(data.estimate$ES_p10_IESO + data.estimate$fitted.IESO),
-  ES_p10_prct_HydroQC = summary(data.estimate$ES_p10_HydroQC + data.estimate$fitted.HydroQC),
-  ES_p10_prct_NYISO = summary(data.estimate$ES_p10_NYISO + data.estimate$fitted.NYISO),
-  ES_p10_prct_ISONE = summary(data.estimate$ES_p10_ISONE + data.estimate$fitted.ISONE),
-  ES_p10_prct_total = summary(data.estimate$ES_p10_total 
-                              + data.estimate$fitted.IESO + data.estimate$fitted.HydroQC
-                              + data.estimate$fitted.NYISO + data.estimate$fitted.ISONE),
-  
-  # ES Summaries for p5
-  ES_p5_prct_IESO = summary(data.estimate$ES_p5_IESO + data.estimate$fitted.IESO),
-  ES_p5_prct_HydroQC = summary(data.estimate$ES_p5_HydroQC + data.estimate$fitted.HydroQC),
-  ES_p5_prct_NYISO = summary(data.estimate$ES_p5_NYISO + data.estimate$fitted.NYISO),
-  ES_p5_prct_ISONE = summary(data.estimate$ES_p5_ISONE + data.estimate$fitted.ISONE),
-  ES_p5_prct_total = summary(data.estimate$ES_p5_total 
-                             + data.estimate$fitted.IESO + data.estimate$fitted.HydroQC
-                             + data.estimate$fitted.NYISO + data.estimate$fitted.ISONE)
-  )
-
-# Convert the summary list into a data frame
-risk_lvl_summary <- do.call(rbind, risk_lvl_summary)
-
-# Save the results to a CSV file
-write.csv(risk_lvl_summary, file = "risk_lvl_summary.csv", row.names = TRUE)

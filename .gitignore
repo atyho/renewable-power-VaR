@@ -2,3 +2,7 @@
 GHCND/ghcnd_all
 GHCND/ghcnd_all.tar.gz
 backup_files
+.Rprofile
+/.Rproj.user
+/renv
+renv.lock
