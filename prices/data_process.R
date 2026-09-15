@@ -58,15 +58,15 @@ price_NE <- list.files(pattern = "\\.csv$", full.names = TRUE) %>%
           `Hour Ending` == "02" & is.na(time) ~
             # Spring transition: HE 02 is interpreted as EST (UTC-5)
             force_tz(as.POSIXct(
-              paste(Date, "02"),
+              paste(Date, "03"),
               format = "%m/%d/%Y %H"),
-              tz = "Etc/GMT+5"),
+              tz = "Etc/GMT+4"),
           TRUE ~ time),
         time_utc = with_tz(time_EDT, tzone = "UTC"))
     
     # Check for time conversion problems
     problem_time <- price %>%
-      filter( !is.na(`Hour Ending`) & (is.na(time) | is.na(time_utc)) )
+      filter( !is.na(`Hour Ending`) & is.na(time_utc) )
     
     if (nrow(problem_time) > 0) {
       cat("\nTime conversion problem in file:", file, "\n")
@@ -79,7 +79,7 @@ price_NE <- list.files(pattern = "\\.csv$", full.names = TRUE) %>%
     
     # Average energy prices by date-hour across all locations
     price <- price %>%
-      group_by(time, time_utc) %>%
+      group_by(time_utc) %>%
       summarise(
         ENGY_price = mean(`Energy Component`, na.rm = TRUE),
         .groups = "drop"
