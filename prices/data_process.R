@@ -6,9 +6,6 @@ library(tidyr)
 library(lubridate)
 library(here)
 
-load("price_NE.RData")
-load("price_Others.RData")
-
 #### ISO-NE Electricity Price ####
 
 setwd(paste0(here(), "/prices/NE"))
@@ -40,18 +37,49 @@ price_NE <- list.files(pattern = "\\.csv$", full.names = TRUE) %>%
       group_by(Date) %>% mutate(dst_end = any(`Hour Ending` == "02X")) %>% ungroup() %>%
       # Covert time to UTC
       mutate(
-        time = as.POSIXct(paste(Date, `Hour Ending`), format = "%m/%d/%Y %H", tz = "America/New_York"),
+        time = as.POSIXct(
+          paste(Date, `Hour Ending`), 
+          format = "%m/%d/%Y %H", 
+          tz = "America/New_York"),
         time_EDT = case_when(
+          # Fall transition: first 02 is EDT (UTC-4)
           `Hour Ending` == "02" & dst_end ~ 
-            force_tz(as.POSIXct(paste(Date, `Hour Ending`), format = "%m/%d/%Y %H"), tzone = "Etc/GMT+4"),
+            force_tz(as.POSIXct(
+              paste(Date, `Hour Ending`), 
+              format = "%m/%d/%Y %H"), 
+              tzone = "Etc/GMT+4"),
+          # Fall transition: repeated 02X is EST (UTC-5)
           `Hour Ending` == "02X" ~ 
-            force_tz(as.POSIXct(paste(Date, "2"), format = "%m/%d/%Y %H"), tzone = "Etc/GMT+5"),
+            force_tz(as.POSIXct(
+              paste(Date, "02"), 
+              format = "%m/%d/%Y %H"), 
+              tzone = "Etc/GMT+5"),
+          # Spring transition: HE 02 is interpreted as EST (UTC-5)
+          `Hour Ending` == "02" & is.na(time) ~
+            # Spring transition: HE 02 is interpreted as EST (UTC-5)
+            force_tz(as.POSIXct(
+              paste(Date, "02"),
+              format = "%m/%d/%Y %H"),
+              tz = "Etc/GMT+5"),
           TRUE ~ time),
         time_utc = with_tz(time_EDT, tzone = "UTC"))
     
+    # Check for time conversion problems
+    problem_time <- price %>%
+      filter( !is.na(`Hour Ending`) & (is.na(time) | is.na(time_utc)) )
+    
+    if (nrow(problem_time) > 0) {
+      cat("\nTime conversion problem in file:", file, "\n")
+      print(problem_time %>%
+          select(Date, `Hour Ending`, dst_end,
+                 time, time_EDT, time_utc)
+      )
+      browser()
+    }
+    
     # Average energy prices by date-hour across all locations
     price <- price %>%
-      group_by(time_utc) %>%
+      group_by(time, time_utc) %>%
       summarise(
         ENGY_price = mean(`Energy Component`, na.rm = TRUE),
         .groups = "drop"
