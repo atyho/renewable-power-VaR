@@ -1,12 +1,8 @@
-*/.Rhistory
+.Rhistory
+.Rprofile
+.Rproj.user
+.ipynb_checkpoints
 GHCND/ghcnd_all
 GHCND/ghcnd_all.tar.gz
 backup_files
-.Rprofile
-/.Rproj.user
-/renv
-renv.lock
-/prices/NE
-/prices/NE/.ipynb_checkpoints
-prices/Others/.Rhistory
-prices/NE/.ipynb_checkpoints/download_csv-checkpoint.ipynb
+prices/NE/*.csv
