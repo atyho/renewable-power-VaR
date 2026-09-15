@@ -6,6 +6,9 @@ library(tidyr)
 library(lubridate)
 library(here)
 
+load("price_NE.RData")
+load("price_Others.RData")
+
 #### ISO-NE Electricity Price ####
 
 setwd(paste0(here(), "/prices/NE"))
@@ -138,4 +141,4 @@ price_all <- price_others %>%
 setwd(paste0(here(), "/prices"))
 save(price_NE, file = "price_NE.RData")
 save(price_others, file = "price_Others.RData")
-save(price_all, file = "../price_all.RData")
+save(price_all, file = "price_all.RData")
