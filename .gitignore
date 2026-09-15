@@ -6,3 +6,7 @@ backup_files
 /.Rproj.user
 /renv
 renv.lock
+/prices/NE
+/prices/NE/.ipynb_checkpoints
+prices/Others/.Rhistory
+prices/NE/.ipynb_checkpoints/download_csv-checkpoint.ipynb
