@@ -151,6 +151,8 @@ price_others <- list.files(pattern = "\\.csv$", full.names = TRUE) %>%
       summarise( ENGY_price = mean(ENGY, na.rm = TRUE), .groups = "drop")
     
     cat("Done for:", file, "\n")
+    
+    return(price)
 
     }) %>%
   bind_rows() %>%
